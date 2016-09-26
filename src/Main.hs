@@ -52,7 +52,7 @@ getPrsForRepo auth mgr ownerName repoName = do
 
   -- Fetch and parse HTML pages for each PR.
   prHtmls <- mapM (Review.fetchHtml mgr) simplePRs
-  return $ zipWith (PullRequestInfo repoName . Review.approvalsFromHtml) prHtmls fullPrs
+  return $ zipWith (PullRequestInfo repoName . Review.approvalsFromHtml ) prHtmls fullPrs
 
 
 main :: IO ()

@@ -1,14 +1,15 @@
 module PullRequestInfo where
 
-import qualified Data.Maybe            as Maybe
-import qualified Data.Text             as Text
+import qualified Data.Maybe             as Maybe
+import qualified Data.Text              as Text
+import qualified Data.Vector            as V 
 import qualified GitHub
 import qualified Review
 import           Text.Html             (prettyHtml, toHtml)
 import           Text.Tabular          (Header (..), Properties (..),
                                         Table (..))
-import qualified Text.Tabular.AsciiArt as AsciiArt
-import qualified Text.Tabular.Html     as Html
+import qualified Text.Tabular.AsciiArt  as AsciiArt
+import qualified Text.Tabular.Html      as Html
 
 
 data PullRequestInfo = PullRequestInfo
@@ -39,6 +40,7 @@ prToTable prs = Table rowNames columnNames rows
       , Header "mergeable"
       , Header "mergeable_state"
       , Header "review_status"
+      , Header "assignees"
       ]
 
     rows = map (\pr ->
@@ -46,12 +48,15 @@ prToTable prs = Table rowNames columnNames rows
       , getPrTitle $ pullRequest pr
       , getPrMergeable $ pullRequest pr
       , getPrMergeableState $ pullRequest pr
-      , show $ reviewStatus pr
+      , getRevewers $ pr
+      , getAssigned $ pr
       ]) prs
 
     getPrTitle = Text.unpack . GitHub.pullRequestTitle
     getPrMergeable = show . Maybe.fromMaybe False . GitHub.pullRequestMergeable
     getPrMergeableState = show . GitHub.pullRequestMergeableState
+    getRevewers pr = [reviewStatus pr, Review.extractApprovals' pr]
+    getAssigned pr = show . map (GitHub.untagName . GitHub.simpleUserLogin) . V.toList . GitHub.pullRequestAssignees 
 
     getPrBranch =
       Text.unpack

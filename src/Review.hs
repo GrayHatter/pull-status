@@ -10,10 +10,12 @@ import           Network.HTTP.Client    (Manager, httpLbs, parseRequest,
                                          responseBody)
 import           Text.HTML.TagSoup.Tree (TagTree (..), parseTree)
 
+import qualified PullRequestInfo
 
 data Approval
   = Approved
   | Rejected
+  | Pending
   deriving (Show)
 
 data Status = Status
@@ -24,6 +26,7 @@ data Status = Status
 instance Show Status where
   show (Status name Approved) = '+' : read (show name)
   show (Status name Rejected) = '-' : read (show name)
+  show (Status name Pending ) = '?' : read (show name)
 
 
 fetchHtml :: Manager -> GitHub.SimplePullRequest -> IO BS.ByteString
@@ -51,7 +54,16 @@ extractApprovals = foldl extract []
     extract acc (cls, name)
       | BS.isInfixOf "is-rejected" cls = Status name Rejected : acc
       | BS.isInfixOf "is-approved" cls = Status name Approved : acc
-      | otherwise = acc
+      | otherwise = Status name Pending : acc
+
+extractApprovals' :: PullRequestInfo.PullRequestInfo -> [Status]
+extractApprovals' = foldl extract []
+  where
+    extract acc (cls, name)
+      | BS.isInfixOf "is-rejected" cls = Status name Rejected : acc
+      | BS.isInfixOf "is-approved" cls = Status name Approved : acc
+      | otherwise = Status name Pending : acc
+
 
 
 approvalsFromHtml :: BS.ByteString -> [Status]
